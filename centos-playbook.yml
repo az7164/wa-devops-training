@@ -1,0 +1,131 @@
+---
+- name: ntp server configuration
+  hosts: db
+
+  tasks:
+  become: yes
+  vars:
+        ntp_enabled: true
+        ntp_timezone: Etc/UTC
+        ntp_manage_config: true
+        ntp_servers: 10.0.0.1
+
+  roles:
+     - geerlingguy.ntp
+#
+####################################
+#
+- name: git installation
+  hosts: db
+
+  tasks:
+  become: yes
+  vars:
+        git_install_from_source: false
+
+  roles:
+     - geerlingguy.git 
+#
+####################################
+#
+- name: create users lab and labsudo
+  hosts: db
+  become: yes
+# 
+  tasks:
+    - user:
+        name: lab
+        comment: user for lab work
+        group: users
+        generate_ssh_key: yes
+        ssh_key_bits: 4096
+        ssh_key_file: .ssh/id_rsa
+    - user:
+        name: labsudo
+        comment: user for lab work
+        group: users
+        generate_ssh_key: yes
+        ssh_key_bits: 4096
+        ssh_key_file: .ssh/id_rsa
+#
+#
+####################################
+#    
+- name: make sudo available for labsudo user
+  hosts: db
+  become: yes
+#
+  tasks:
+  - copy:
+      content: 'labsudo ALL=(ALL:ALL) NOPASSWD:ALL'
+      dest: /etc/sudoers.d/labsudo
+      mode: 0440   
+#
+###################################
+#
+- name: Set up authorized keys for lab and labsudo users
+  hosts: db
+  become: yes
+
+  tasks:
+  - authorized_key: 
+       user: lab
+       state: present
+       key: "{{ lookup('file', '/home/ansible/.ssh/id_rsa.pub') }}"
+  - authorized_key:
+       user: labsudo
+       state: present
+       key: "{{ lookup('file', '/home/ansible/.ssh/id_rsa.pub') }}"
+#
+###################################
+#
+- name: Syslog rotation
+  hosts: db
+  become: yes
+
+  tasks:
+  vars:
+     logrotate_scripts:
+       - name: syslog-rotation
+         path: /var/log/messages
+         options:
+           - daily
+           - weekly
+           - size 25M
+           - rotate 7
+           - missingok
+           - compress
+           - delaycompress
+           - copytruncate
+
+  roles:
+    - nickhammond.logrotate
+#
+##################################
+#
+- name: installation nginx at frontend
+  hosts: frontend
+  become: yes
+
+  tasks:
+  - yum_repository:
+      name: nginx
+      description: NGINX  YUM repo
+      baseurl: http://nginx.org/packages/centos/7/$basearch/
+  - yum:
+      name: nginx
+      state: latest
+#
+###################################
+#
+#
+- name: installation php-fpm  at backend
+  hosts: backend
+  become: yes
+
+  tasks:
+  - yum:
+     name: php-fpm
+     state: latest
+#
+#
