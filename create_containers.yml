@@ -1,0 +1,41 @@
+- name: Create four docker containers
+  hosts: docker-host
+  connection: local
+  become: yes
+  gather_facts: no 
+#
+# tutum/centis -> Simple CentOS docker image with SSH access 
+#
+  tasks:
+    - name: Create 1st docker container
+      docker_container:
+        name: centos-docker1
+        image: tutum/centos:centos7
+        published_ports:
+          - "9001:22"
+        state: started
+
+    - name: Create 2nd docker container
+      docker_container:
+        name: centos-docker2
+        image: tutum/centos:centos7
+        published_ports:
+          - "9002:22"
+        state: started
+
+    - name: Create 3rd docker container
+      docker_container:
+        name: centos-docker3
+        image: tutum/centos:centos7
+        published_ports:
+          - "9003:22"
+        state: started
+
+    - name: Create 4th docker container
+      docker_container:
+        name: centos-docker4
+        image: tutum/centos:centos7
+        published_ports:
+          - "9004:22"
+        state: started
+#
