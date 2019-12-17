@@ -1,0 +1,54 @@
+---
+- name: create user  node_exporter with group node_exporter
+  hosts: monitoring
+  become: yes
+  vars:
+      version: 0.18.1
+      userId: node_exporter
+      groupId: node_exporter
+# 
+  tasks:
+#
+# create group prometheus
+#
+    - group:
+        name: "{{groupId}}"
+        state: present
+#
+# create user prometheus
+#
+    - user:
+        name: "{{userId}}"
+        comment: user for prometheus service
+        group: "{{groupId}}"
+        system: yes
+        createhome: yes
+        state: present
+#
+# download and unarchive prometheus binaries
+#
+    - unarchive:
+        src: "https://github.com/prometheus/node_exporter/releases/download/v{{ version }}/node_exporter-{{ version }}.linux-amd64.tar.gz"
+        dest: /usr/local/bin
+        owner: "{{userId}}"
+        group: "{{groupId}}"
+        remote_src: yes
+#
+#
+# Copy systemd init file, reload systemd configuration
+#
+    - copy:
+        src: "init.service.client.j2"
+        dest: "/etc/systemd/system/node_exporter.service"
+    - shell:
+        cmd: systemctl daemon-reload
+#
+#
+# Start  node_exporter service
+#
+    - service:
+        name: node_exporter
+        state: started
+        enabled: yes
+#
+#

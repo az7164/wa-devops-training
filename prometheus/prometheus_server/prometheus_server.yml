@@ -1,0 +1,65 @@
+---
+- name: create user prometeus with group prometeus
+  hosts: prometheus
+  become: yes
+  vars:
+      version: 2.14.0
+      userId: prometheus
+      groupId: prometheus
+# 
+  tasks:
+#
+# create group prometheus
+#
+    - group:
+        name: "{{groupId}}"
+        state: present
+#
+# create user prometheus
+#
+    - user:
+        name: "{{userId}}"
+        comment: user for prometheus service
+        group: "{{groupId}}"
+        system: yes
+        createhome: yes
+        state: present
+#
+# download and unarchive prometheus binaries
+#
+    - unarchive:
+        src: "https://github.com/prometheus/prometheus/releases/download/v{{ version }}/prometheus-{{ version }}.linux-amd64.tar.gz"
+        dest: /usr/local/bin
+        owner: "{{userId}}"
+        group: "{{groupId}}"
+        remote_src: yes
+#
+# copy configuration file
+#
+    - copy:
+        src: "prometheus.conf.j2"
+        dest: "/etc/prometheus.conf"
+        owner: "{{userId}}"
+        group: "{{groupId}}"
+#
+# Copy systemd init file, reload systemd configuration, create directory for db
+#
+    - copy:
+        src: "init.service.j2"
+        dest: "/etc/systemd/system/prometheus.service"
+    - shell:
+        cmd: systemctl daemon-reload
+    - shell:
+        cmd: mkdir /var/lib/prometheus
+    - shell:
+        cmd: chown prometheus:prometheus /var/lib/prometheus
+#
+
+# Start prometeus service
+#
+    - service:
+        name: prometheus
+        state: started
+        enabled: yes
+#
+#
