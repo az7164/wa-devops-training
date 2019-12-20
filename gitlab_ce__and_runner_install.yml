@@ -1,0 +1,31 @@
+---
+- name: installation gitlab-ce 
+  hosts: gitlab-host
+  become: yes
+
+  tasks:
+  - yum_repository:
+      name: gitlab-ce-repo
+      description: gitlab-ce yum repository
+      baseurl: https://packages.gitlab.com/gitlab/gitlab-ce/el/7/$basearch
+  - yum:
+      name: gitlab-ce
+      state: latest
+#
+###################################
+#
+- name: installation gitlab runner
+  hosts: gitlab-runners
+  become: yes
+
+  tasks:
+  - yum_repository:
+      name: gitlab-runner
+      description: gitlab runner yum repository
+      baseurl: https://packages.gitlab.com/runner/gitlab-runner/el/7/$basearch
+  - yum:
+      name: gitlab-runner
+      state: latest
+      disable_gpg_check: yes
+#
+#
